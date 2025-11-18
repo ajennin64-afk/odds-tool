@@ -3,100 +3,160 @@
 <head>
   <meta charset="UTF-8" />
   <title>Parlay Odds Helper (DraftKings Style)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
+    :root {
+      --bg: #020617;
+      --bg-page: #020617;
+      --bg-card: #020617;
+      --border: #1f2937;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #22c55e;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #0f172a;
-      color: #e5e7eb;
+      background: radial-gradient(circle at top, #0f172a 0, #020617 55%, #000 100%);
+      color: var(--text);
       display: flex;
       justify-content: center;
-      padding: 40px 16px;
+      padding: 16px;
+      margin: 0;
+      min-height: 100vh;
     }
+
     .card {
-      background: #020617;
-      border-radius: 16px;
-      max-width: 620px;
+      background: rgba(2, 6, 23, 0.96);
+      border-radius: 18px;
       width: 100%;
-      padding: 24px 20px;
-      box-shadow: 0 18px 45px rgba(0,0,0,0.6);
-      border: 1px solid #1f2937;
+      max-width: 560px;
+      padding: 18px 16px 20px;
+      box-shadow: 0 18px 45px rgba(0,0,0,0.7);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(10px);
     }
+
+    @media (min-width: 640px) {
+      body {
+        padding: 32px 20px;
+      }
+      .card {
+        padding: 22px 20px 24px;
+        border-radius: 20px;
+      }
+    }
+
     h1 {
-      font-size: 1.4rem;
-      margin-bottom: 4px;
+      font-size: clamp(1.25rem, 3.5vw, 1.5rem);
+      margin: 0 0 4px;
     }
+
     p {
       margin: 4px 0 12px;
-      color: #9ca3af;
+      color: var(--muted);
       font-size: 0.9rem;
+      line-height: 1.35;
     }
+
     label {
       display: block;
       margin-bottom: 6px;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
     }
-    input, textarea {
+
+    input,
+    textarea {
       width: 100%;
-      padding: 8px 10px;
-      border-radius: 8px;
+      padding: 10px 11px;
+      border-radius: 10px;
       border: 1px solid #4b5563;
       background: #020617;
-      color: #e5e7eb;
+      color: var(--text);
       font-size: 0.95rem;
-      box-sizing: border-box;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
-    input:focus, textarea:focus {
+
+    input:focus,
+    textarea:focus {
       outline: none;
-      border-color: #22c55e;
+      border-color: var(--accent);
       box-shadow: 0 0 0 1px #22c55e33;
     }
+
     textarea {
-      min-height: 70px;
+      min-height: 80px;
       resize: vertical;
     }
+
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 12px;
-      margin-top: 12px;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
     }
+
+    @media (max-width: 480px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .stat {
       background: #020617;
-      border-radius: 10px;
-      padding: 10px 12px;
-      border: 1px solid #1f2937;
+      border-radius: 12px;
+      padding: 9px 10px;
+      border: 1px solid var(--border);
     }
+
     .stat-label {
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       text-transform: uppercase;
       letter-spacing: 0.06em;
       color: #6b7280;
     }
+
     .stat-value {
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       margin-top: 2px;
       word-break: break-all;
     }
+
     .explanation {
       margin-top: 14px;
       font-size: 0.85rem;
       color: #d1d5db;
       line-height: 1.35;
     }
+
     .hint {
-      font-size: 0.8rem;
-      color: #9ca3af;
+      font-size: 0.78rem;
+      color: var(--muted);
       margin-top: 2px;
+      margin-bottom: 10px;
     }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.78rem;
+      background: #020617;
+      padding: 2px 4px;
+      border-radius: 4px;
+      border: 1px solid #111827;
+    }
+
     .dk-tag {
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       color: #a7f3d0;
       background: #064e3b;
       display: inline-block;
-      padding: 2px 8px;
+      padding: 3px 8px;
       border-radius: 999px;
-      margin-bottom: 10px;
+      margin: 4px 0 10px;
       text-transform: uppercase;
       letter-spacing: 0.08em;
     }
@@ -106,7 +166,7 @@
   <div class="card">
     <h1>Parlay Odds Helper</h1>
     <p>
-      Paste your DraftKings-style parlay legs and see the combined hit rate, fair DK odds, 
+      Paste your DraftKings-style parlay legs and see the combined hit rate, DK-style odds,
       payout on your stake, and a “coin-flip EV equivalent” line.
     </p>
 
@@ -115,7 +175,8 @@
     <label for="parlayOdds">Parlay leg odds</label>
     <textarea id="parlayOdds">-110, -110, -110</textarea>
     <div class="hint">
-      Separate legs by comma, space, or newline. Example: <code>-142, -164, +120, -112, +126</code>
+      Separate legs by comma, space, or newline. Example:
+      <code>-142, -164, +120, -112, +126</code>
     </div>
 
     <label for="stake">Stake amount (your bet)</label>
@@ -132,7 +193,7 @@
       </div>
     </div>
 
-    <div class="grid" style="margin-top: 10px;">
+    <div class="grid">
       <div class="stat">
         <div class="stat-label">DraftKings-style odds</div>
         <div id="parlayPayoutOdds" class="stat-value">–</div>
@@ -143,7 +204,7 @@
       </div>
     </div>
 
-    <div class="grid" style="margin-top: 10px;">
+    <div class="grid">
       <div class="stat">
         <div class="stat-label">Coin-flip EV equivalent</div>
         <div id="coinFlipOdds" class="stat-value">–</div>
@@ -156,13 +217,12 @@
 
     <div id="parlayExplanation" class="explanation"></div>
     <div class="hint">
-      Note: This mirrors standard DK multi-game parlay logic (multiply each leg’s decimal odds). 
-      Same-game parlays and profit boosts will differ.
+      This mirrors standard DK multi-game parlay logic (multiply each leg’s decimal odds).
+      Same-game parlays and profit boosts will pay differently.
     </div>
   </div>
 
   <script>
-    // ---- Core math helpers ----
     function americanToProb(odds) {
       odds = Number(odds);
       if (!odds || odds === 0) return NaN;
@@ -189,10 +249,8 @@
       dec = Number(dec);
       if (!dec || dec <= 1) return NaN;
       if (dec >= 2) {
-        // plus odds
         return (dec - 1) * 100;
       } else {
-        // minus odds
         return -100 / (dec - 1);
       }
     }
@@ -201,10 +259,8 @@
       p = Number(p);
       if (p <= 0 || p >= 1 || isNaN(p)) return NaN;
       if (p > 0.5) {
-        // favorite (negative)
         return -Math.round((p / (1 - p)) * 100);
       } else {
-        // dog (positive)
         return Math.round(((1 - p) / p) * 100);
       }
     }
@@ -225,7 +281,6 @@
       return "$" + x.toFixed(2);
     }
 
-    // ---- Parlay (DraftKings-style) logic ----
     function updateParlay() {
       const input = document.getElementById("parlayOdds").value;
       const stakeInput = Number(document.getElementById("stake").value) || 0;
@@ -273,18 +328,13 @@
         return;
       }
 
-      // Combined hit rate (probability all legs win)
-      hitRateEl.textContent = formatPct(combinedProb);
-
-      // DraftKings-style parlay decimal (true multiplication)
       const parlayDec = combinedDecimal;
-      decEl.textContent = isNaN(parlayDec) ? "–" : parlayDec.toFixed(2);
-
-      // DK-style American odds from product of decimals
       const parlayAm = decimalToAmerican(parlayDec);
+
+      hitRateEl.textContent = formatPct(combinedProb);
+      decEl.textContent = isNaN(parlayDec) ? "–" : parlayDec.toFixed(2);
       payoutOddsEl.textContent = formatOdds(parlayAm);
 
-      // Stake → return & profit
       if (stakeInput > 0 && !isNaN(parlayDec)) {
         const totalReturn = stakeInput * parlayDec;
         const profit = totalReturn - stakeInput;
@@ -294,14 +344,11 @@
         stakeReturnEl.textContent = "–";
       }
 
-      // Single-line equivalent odds from probability (same chance as parlay)
       const impliedSingleOdds = probToAmerican(combinedProb);
       impliedOddsEl.textContent = formatOdds(impliedSingleOdds);
 
-      // Coin-flip EV equivalent:
-      // EV_parlay (per 1 unit) = p * (dec - 1) - (1 - p)
       const EV_parlay = combinedProb * (parlayDec - 1) - (1 - combinedProb);
-      const coinFlipDec = 2 * (EV_parlay + 1); // solve 0.5*(D-1) - 0.5 = EV
+      const coinFlipDec = 2 * (EV_parlay + 1);
       const coinFlipAm = decimalToAmerican(coinFlipDec);
       coinFlipOddsEl.textContent = isNaN(coinFlipAm) ? "–" : formatOdds(coinFlipAm);
 
@@ -318,7 +365,6 @@
     document.getElementById("parlayOdds").addEventListener("input", updateParlay);
     document.getElementById("stake").addEventListener("input", updateParlay);
 
-    // Initial render
     updateParlay();
   </script>
 </body>
