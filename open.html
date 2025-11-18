@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Odds → Hit % & Parlay Helper (DraftKings Style)</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+      display: flex;
+      justify-content: center;
+      padding: 40px 16px;
+    }
+    .card {
+      background: #020617;
+      border-radius: 16px;
+      max-width: 620px;
+      width: 100%;
+      padding: 24px 20px;
+      box-shadow: 0 18px 45px rgba(0,0,0,0.6);
+      border: 1px solid #1f2937;
+    }
+    h1 {
+      font-size: 1.4rem;
+      margin-bottom: 4px;
+    }
+    p {
+      margin: 4px 0 12px;
+      color: #9ca3af;
+      font-size: 0.9rem;
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #4b5563;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 0.95rem;
+      box-sizing: border-box;
+      margin-bottom: 14px;
+    }
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #22c55e;
+      box-shadow: 0 0 0 1px #22c55e33;
+    }
+    textarea {
+      min-height: 70px;
+      resize: vertical;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .stat {
+      background: #020617;
+      border-radius: 10px;
+      padding: 10px 12px;
+      border: 1px solid #1f2937;
+    }
+    .stat-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #6b7280;
+    }
+    .stat-value {
+      font-size: 1.1rem;
+      margin-top: 2px;
+      word-break: break-all;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 3px 9px;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 8px;
+    }
+    .badge-good { background: #14532d; color: #bbf7d0; }
+    .badge-warn { background: #451a03; color: #fed7aa; }
+
+    .tabs {
+      display: inline-flex;
+      border-radius: 999px;
+      background: #020617;
+      padding: 3px;
+      border: 1px solid #1f2937;
+      margin: 10px 0 18px;
+    }
+    .tab-button {
+      border: none;
+      background: transparent;
+      color: #9ca3af;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+    }
+    .tab-button.active {
+      background: #22c55e1a;
+      color: #bbf7d0;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .explanation {
+      margin-top: 14px;
+      font-size: 0.85rem;
+      color: #d1d5db;
+      line-height: 1.35;
+    }
+    .hint {
+      font-size: 0.8rem;
+      color: #9ca3af;
+      margin-top: 2px;
+    }
+    .dk-tag {
+      font-size: 0.75rem;
+      color: #a7f3d0;
+      background: #064e3b;
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Odds → Hit % & Parlay Helper</h1>
+    <p>Break down single legs or a DraftKings-style parlay. Enter American odds and see implied hit rate, difficulty vs baseline, and parlay equivalents.</p>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-button active" data-tab="single">Single Leg</button>
+      <button class="tab-button" data-tab="parlay">Parlay (DK Style)</button>
+    </div>
+
+    <!-- SINGLE LEG TAB -->
+    <div id="tab-single" class="tab-content active">
+      <label for="odds">Leg odds (e.g. -110, -135, +140)</label>
+      <input id="odds" type="number" value="-130" />
+
+      <label for="baseline">Baseline odds to compare to (e.g. -110)</label>
+      <input id="baseline" type="number" value="-110" />
+
+      <div class="grid">
+        <div class="stat">
+          <div class="stat-label">Leg hit rate</div>
+          <div id="legProb" class="stat-value">–</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Baseline hit rate</div>
+          <div id="baseProb" class="stat-value">–</div>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top: 10px;">
+        <div class="stat">
+          <div class="stat-label">Extra hit % needed</div>
+          <div id="diffProb" class="stat-value">–</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Verdict</div>
+          <div id="verdict" class="stat-value">–</div>
+          <div id="badgeContainer"></div>
+        </div>
+      </div>
+
+      <div id="explanation" class="explanation"></div>
+    </div>
+
+    <!-- PARLAY TAB -->
+    <div id="tab-parlay" class="tab-content">
+      <div class="dk-tag">DraftKings-style multi-game parlay (no boosts)</div>
+
+      <label for="parlayOdds">Parlay leg odds</label>
+      <textarea id="parlayOdds">-110, -110, -110</textarea>
+      <div class="hint">Separate legs by comma, space, or newline. Example: <code>-142, -164, +120, -112</code></div>
+
+      <label for="stake">Stake amount (your bet)</label>
+      <input id="stake" type="number" value="10" min="0" step="0.01" />
+
+      <div class="grid">
+        <div class="stat">
+          <div class="stat-label">Combined hit rate</div>
+          <div id="parlayHitRate" class="stat-value">–</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">DK-style decimal price</div>
+          <div id="parlayDecimal" class="stat-value">–</div>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top: 10px;">
+        <div class="stat">
+          <div class="stat-label">DraftKings-style odds</div>
+          <div id="parlayPayoutOdds" class="stat-value">–</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Stake → total return</div>
+          <div id="parlayStakeReturn" class="stat-value">–</div>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top: 10px;">
+        <div class="stat">
+          <div class="stat-label">Coin-flip EV equivalent</div>
+          <div id="coinFlipOdds" class="stat-value">–</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Single-line prob equivalent</div>
+          <div id="parlayImpliedOdds" class="stat-value">–</div>
+        </div>
+      </div>
+
+      <div id="parlayExplanation" class="explanation"></div>
+      <div class="hint">
+        Note: This mirrors standard DK multi-game parlay logic (multiply decimal odds). Same-game parlays and profit boosts will differ.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ---- Core math helpers ----
+    function americanToProb(odds) {
+      odds = Number(odds);
+      if (!odds || odds === 0) return NaN;
+      if (odds > 0) {
+        return 100 / (odds + 100);
+      } else {
+        const abs = Math.abs(odds);
+        return abs / (abs + 100);
+      }
+    }
+
+    function americanToDecimal(odds) {
+      odds = Number(odds);
+      if (!odds || odds === 0) return NaN;
+      if (odds > 0) {
+        return 1 + odds / 100;
+      } else {
+        const abs = Math.abs(odds);
+        return 1 + 100 / abs;
+      }
+    }
+
+    function decimalToAmerican(dec) {
+      dec = Number(dec);
+      if (!dec || dec <= 1) return NaN;
+      if (dec >= 2) {
+        // plus odds
+        return (dec - 1) * 100;
+      } else {
+        // minus odds
+        return -100 / (dec - 1);
+      }
+    }
+
+    function probToAmerican(p) {
+      p = Number(p);
+      if (p <= 0 || p >= 1 || isNaN(p)) return NaN;
+      if (p > 0.5) {
+        // favorite (negative)
+        return -Math.round((p / (1 - p)) * 100);
+      } else {
+        // dog (positive)
+        return Math.round(((1 - p) / p) * 100);
+      }
+    }
+
+    function formatPct(p) {
+      if (isNaN(p)) return "–";
+      return (p * 100).toFixed(2) + "%";
+    }
+
+    function formatOdds(o) {
+      if (isNaN(o)) return "–";
+      const rounded = Math.round(o);
+      return (rounded > 0 ? "+" : "") + rounded;
+    }
+
+    function formatMoney(x) {
+      if (isNaN(x)) return "–";
+      return "$" + x.toFixed(2);
+    }
+
+    // ---- Single-leg logic ----
+    function updateSingle() {
+      const oddsInput = document.getElementById("odds").value;
+      const baseInput = document.getElementById("baseline").value;
+
+      const pLeg = americanToProb(oddsInput);
+      const pBase = americanToProb(baseInput);
+
+      const legProbEl = document.getElementById("legProb");
+      const baseProbEl = document.getElementById("baseProb");
+      const diffProbEl = document.getElementById("diffProb");
+      const verdictEl = document.getElementById("verdict");
+      const badgeContainer = document.getElementById("badgeContainer");
+      const explanationEl = document.getElementById("explanation");
+
+      badgeContainer.innerHTML = "";
+
+      if (isNaN(pLeg) || isNaN(pBase)) {
+        legProbEl.textContent = baseProbEl.textContent = diffProbEl.textContent = "–";
+        verdictEl.textContent = "Enter valid odds";
+        explanationEl.textContent = "";
+        return;
+      }
+
+      legProbEl.textContent = formatPct(pLeg);
+      baseProbEl.textContent = formatPct(pBase);
+
+      const diff = (pLeg - pBase) * 100; // in percentage points
+      const diffRounded = diff.toFixed(2);
+      const sign = diff > 0 ? "+" : "";
+      diffProbEl.textContent = sign + diffRounded + " pts";
+
+      const legOdds = Number(oddsInput);
+      let verdict = "";
+      let badgeClass = "";
+      let badgeText = "";
+
+      // Your group's rule-of-thumb:
+      if (legOdds <= -100 && legOdds >= -129) {
+        verdict = "Within sweet spot.";
+        badgeClass = "badge-good";
+        badgeText = "Auto-play range";
+      } else if (legOdds <= -130 && legOdds >= -132) {
+        verdict = "Borderline. Needs group approval.";
+        badgeClass = "badge-warn";
+        badgeText = "Debate first";
+      } else if (legOdds <= -133) {
+        verdict = "Too juicy for the rule.";
+        badgeClass = "badge-warn";
+        badgeText = "Avoid in parlay";
+      } else {
+        verdict = "Outside your standard rule, but math shown above.";
+      }
+
+      verdictEl.textContent = verdict;
+
+      if (badgeText) {
+        const badge = document.createElement("div");
+        badge.className = "badge " + badgeClass;
+        badge.textContent = badgeText;
+        badgeContainer.appendChild(badge);
+      }
+
+      explanationEl.textContent =
+        `At odds ${legOdds > 0 ? "+" + legOdds : legOdds}, you need to hit about ` +
+        `${(pLeg * 100).toFixed(2)}% of the time. ` +
+        `Compared to baseline ${baseInput}, which needs ${(pBase * 100).toFixed(2)}%, ` +
+        (diff >= 0
+          ? `you must be right about ${diffRounded} percentage points more often to break even.`
+          : `you can be about ${Math.abs(diffRounded)} percentage points worse and still break even.`);
+    }
+
+    // ---- Parlay (DraftKings-style) logic ----
+    function updateParlay() {
+      const input = document.getElementById("parlayOdds").value;
+      const stakeInput = Number(document.getElementById("stake").value) || 0;
+
+      const parts = input
+        .split(/[\s,]+/)
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+
+      const hitRateEl = document.getElementById("parlayHitRate");
+      const decEl = document.getElementById("parlayDecimal");
+      const impliedOddsEl = document.getElementById("parlayImpliedOdds");
+      const coinFlipOddsEl = document.getElementById("coinFlipOdds");
+      const payoutOddsEl = document.getElementById("parlayPayoutOdds");
+      const stakeReturnEl = document.getElementById("parlayStakeReturn");
+      const explanationEl = document.getElementById("parlayExplanation");
+
+      if (parts.length === 0) {
+        hitRateEl.textContent = decEl.textContent =
+          impliedOddsEl.textContent = coinFlipOddsEl.textContent =
+          payoutOddsEl.textContent = stakeReturnEl.textContent = "–";
+        explanationEl.textContent = "";
+        return;
+      }
+
+      let combinedProb = 1;
+      let combinedDecimal = 1;
+      let validCount = 0;
+
+      for (const s of parts) {
+        const odds = Number(s);
+        const p = americanToProb(odds);
+        const d = americanToDecimal(odds);
+        if (isNaN(p) || isNaN(d)) continue;
+        combinedProb *= p;
+        combinedDecimal *= d;
+        validCount++;
+      }
+
+      if (validCount === 0) {
+        hitRateEl.textContent = decEl.textContent =
+          impliedOddsEl.textContent = coinFlipOddsEl.textContent =
+          payoutOddsEl.textContent = stakeReturnEl.textContent = "–";
+        explanationEl.textContent = "Enter at least one valid odds number (e.g. -110, -130, +120).";
+        return;
+      }
+
+      // Combined hit rate (probability all legs win)
+      hitRateEl.textContent = formatPct(combinedProb);
+
+      // DraftKings-style parlay decimal (true multiplication)
+      const parlayDec = combinedDecimal;
+      decEl.textContent = isNaN(parlayDec) ? "–" : parlayDec.toFixed(2);
+
+      // DK-style American odds from product of decimals
+      const parlayAm = decimalToAmerican(parlayDec);
+      payoutOddsEl.textContent = formatOdds(parlayAm);
+
+      // Stake → return & profit using DK-style decimal
+      if (stakeInput > 0 && !isNaN(parlayDec)) {
+        const totalReturn = stakeInput * parlayDec;
+        const profit = totalReturn - stakeInput;
+        stakeReturnEl.textContent =
+          `${formatMoney(stakeInput)} → ${formatMoney(totalReturn)} (profit ${formatMoney(profit)})`;
+      } else {
+        stakeReturnEl.textContent = "–";
+      }
+
+      // Single-line equivalent odds from probability (same chance as parlay)
+      const impliedSingleOdds = probToAmerican(combinedProb);
+      impliedOddsEl.textContent = formatOdds(impliedSingleOdds);
+
+      // Coin-flip EV equivalent:
+      // EV_parlay (per 1 unit) = p * (dec - 1) - (1 - p)
+      const EV_parlay = combinedProb * (parlayDec - 1) - (1 - combinedProb);
+      const coinFlipDec = 2 * (EV_parlay + 1); // solve 0.5*(D-1) - 0.5 = EV
+      const coinFlipAm = decimalToAmerican(coinFlipDec);
+      coinFlipOddsEl.textContent = isNaN(coinFlipAm) ? "–" : formatOdds(coinFlipAm);
+
+      const legsStr = parts.join(", ");
+      explanationEl.textContent =
+        `For legs ${legsStr}, the implied chance of the entire parlay cashing (in DK-style math) is about ` +
+        `${(combinedProb * 100).toFixed(2)}%. That’s similar to betting a single line at ` +
+        `${formatOdds(impliedSingleOdds)} in terms of pure probability. ` +
+        `With a decimal price of ~${parlayDec.toFixed(2)}x, the EV is roughly ` +
+        `${EV_parlay.toFixed(3)} units per 1 staked. A fair 50/50 “coin-flip” bet with the same EV ` +
+        `would need to be priced around ${isNaN(coinFlipAm) ? "N/A" : formatOdds(coinFlipAm)}.`;
+    }
+
+    // ---- Tabs wiring ----
+    const tabButtons = document.querySelectorAll(".tab-button");
+    tabButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        tabButtons.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        const target = btn.getAttribute("data-tab");
+        document.querySelectorAll(".tab-content").forEach(el => {
+          el.classList.remove("active");
+        });
+        document.getElementById("tab-" + target).classList.add("active");
+
+        if (target === "single") {
+          updateSingle();
+        } else {
+          updateParlay();
+        }
+      });
+    });
+
+    // ---- Event listeners ----
+    document.getElementById("odds").addEventListener("input", updateSingle);
+    document.getElementById("baseline").addEventListener("input", updateSingle);
+    document.getElementById("parlayOdds").addEventListener("input", updateParlay);
+    document.getElementById("stake").addEventListener("input", updateParlay);
+
+    // Initial render
+    updateSingle();
+    updateParlay();
+  </script>
+</body>
+</html>
