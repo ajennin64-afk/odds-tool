@@ -13,6 +13,9 @@
       --text: #e5e7eb;
       --muted: #9ca3af;
       --accent: #22c55e;
+      --ev-good: #22c55e;
+      --ev-warn: #facc15;
+      --ev-bad: #f97316;
     }
 
     * {
@@ -124,6 +127,10 @@
       font-size: 1.05rem;
       margin-top: 2px;
       word-break: break-all;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
     }
 
     .explanation {
@@ -159,6 +166,33 @@
       margin: 4px 0 10px;
       text-transform: uppercase;
       letter-spacing: 0.08em;
+    }
+
+    .ev-chip {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+    }
+
+    .ev-good {
+      color: #bbf7d0;
+      background: #14532d;
+      border-color: #16a34a;
+    }
+
+    .ev-warn {
+      color: #fef9c3;
+      background: #854d0e;
+      border-color: #facc15;
+    }
+
+    .ev-bad {
+      color: #ffedd5;
+      background: #7c2d12;
+      border-color: #fb923c;
     }
   </style>
 </head>
@@ -207,7 +241,10 @@
     <div class="grid">
       <div class="stat">
         <div class="stat-label">Coin-flip EV equivalent</div>
-        <div id="coinFlipOdds" class="stat-value">–</div>
+        <div id="coinFlipOdds" class="stat-value">
+          <span id="coinFlipOddsText">–</span>
+          <span id="evChip" class="ev-chip"></span>
+        </div>
       </div>
       <div class="stat">
         <div class="stat-label">Single-line prob equivalent</div>
@@ -293,15 +330,19 @@
       const hitRateEl = document.getElementById("parlayHitRate");
       const decEl = document.getElementById("parlayDecimal");
       const impliedOddsEl = document.getElementById("parlayImpliedOdds");
-      const coinFlipOddsEl = document.getElementById("coinFlipOdds");
+      const coinFlipOddsTextEl = document.getElementById("coinFlipOddsText");
+      const evChip = document.getElementById("evChip");
       const payoutOddsEl = document.getElementById("parlayPayoutOdds");
       const stakeReturnEl = document.getElementById("parlayStakeReturn");
       const explanationEl = document.getElementById("parlayExplanation");
 
       if (parts.length === 0) {
         hitRateEl.textContent = decEl.textContent =
-          impliedOddsEl.textContent = coinFlipOddsEl.textContent =
-          payoutOddsEl.textContent = stakeReturnEl.textContent = "–";
+          impliedOddsEl.textContent = "–";
+        coinFlipOddsTextEl.textContent = "–";
+        evChip.textContent = "";
+        evChip.className = "ev-chip";
+        payoutOddsEl.textContent = stakeReturnEl.textContent = "–";
         explanationEl.textContent = "";
         return;
       }
@@ -322,8 +363,11 @@
 
       if (validCount === 0) {
         hitRateEl.textContent = decEl.textContent =
-          impliedOddsEl.textContent = coinFlipOddsEl.textContent =
-          payoutOddsEl.textContent = stakeReturnEl.textContent = "–";
+          impliedOddsEl.textContent = "–";
+        coinFlipOddsTextEl.textContent = "–";
+        evChip.textContent = "";
+        evChip.className = "ev-chip";
+        payoutOddsEl.textContent = stakeReturnEl.textContent = "–";
         explanationEl.textContent = "Enter at least one valid odds number (e.g. -110, -130, +120).";
         return;
       }
@@ -347,10 +391,38 @@
       const impliedSingleOdds = probToAmerican(combinedProb);
       impliedOddsEl.textContent = formatOdds(impliedSingleOdds);
 
+      // EV per 1 unit
       const EV_parlay = combinedProb * (parlayDec - 1) - (1 - combinedProb);
+
+      // Coin-flip decimal & odds
       const coinFlipDec = 2 * (EV_parlay + 1);
       const coinFlipAm = decimalToAmerican(coinFlipDec);
-      coinFlipOddsEl.textContent = isNaN(coinFlipAm) ? "–" : formatOdds(coinFlipAm);
+
+      if (isNaN(coinFlipAm)) {
+        coinFlipOddsTextEl.textContent = "–";
+        evChip.textContent = "";
+        evChip.className = "ev-chip";
+      } else {
+        coinFlipOddsTextEl.textContent = formatOdds(coinFlipAm);
+
+        // Reset classes
+        evChip.className = "ev-chip";
+
+        // Color coding based on EV
+        // EV ≥ 0: good (green)
+        // -0.10 ≤ EV < 0: warning (yellow)
+        // EV < -0.10: bad (red)
+        if (EV_parlay >= 0) {
+          evChip.classList.add("ev-good");
+          evChip.textContent = "Good EV";
+        } else if (EV_parlay >= -0.10) {
+          evChip.classList.add("ev-warn");
+          evChip.textContent = "Meh EV";
+        } else {
+          evChip.classList.add("ev-bad");
+          evChip.textContent = "Bad EV";
+        }
+      }
 
       const legsStr = parts.join(", ");
       explanationEl.textContent =
@@ -358,8 +430,8 @@
         `${(combinedProb * 100).toFixed(2)}%. That’s similar to betting a single line at ` +
         `${formatOdds(impliedSingleOdds)} in terms of pure probability. ` +
         `With a decimal price of ~${parlayDec.toFixed(2)}x, the EV is roughly ` +
-        `${EV_parlay.toFixed(3)} units per 1 staked. A fair 50/50 “coin-flip” bet with the same EV ` +
-        `would need to be priced around ${isNaN(coinFlipAm) ? "N/A" : formatOdds(coinFlipAm)}.`;
+        `${EV_parlay.toFixed(3)} units per 1 staked. The coin-flip EV line tells you what 50/50 odds ` +
+        `would have the same value: green = solid, yellow = borderline, red = rough.`;
     }
 
     document.getElementById("parlayOdds").addEventListener("input", updateParlay);
